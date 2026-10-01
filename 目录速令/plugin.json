@@ -1,0 +1,16 @@
+{
+  "main": "index.html",
+  "logo": "logo.png",
+  "preload": "preload.js",
+  "pluginSetting": {
+    "single": true,
+    "height": 600
+  },
+  "features": [
+    {
+      "code": "manage",
+      "explain": "管理自定义命令：新增 / 编辑 / 图标 / 试运行",
+      "cmds": ["目录速令"]
+    }
+  ]
+}

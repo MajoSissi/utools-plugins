@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>目录速令</title>
+    <link rel="stylesheet" href="../assets/style.css" />
+  
+    <style>
+      html, body { height: 100% !important; overflow: hidden !important; }
+      body {
+        display: flex; align-items: center; justify-content: center;
+        background: #0e1116 !important; padding: 12px;
+      }
+      #preview-frame {
+        width: 100%; max-width: 900px; height: 100%; overflow: hidden; position: relative;
+        border-radius: 20px; border: 1px solid rgba(195,204,217,.12);
+        box-shadow: 0 24px 60px rgba(0,0,0,.65);
+        display: flex; flex-direction: column; background: var(--surface);
+      }
+      #preview-frame > .view { flex: 1; height: auto; min-height: 0; }
+      #preview-bar {
+        height: 32px; flex: 0 0 32px; display: flex; align-items: center; gap: 8px;
+        padding: 0 12px; background: #1b1f27; border-bottom: 1px solid rgba(195,204,217,.1);
+        font: 12px "Segoe UI","Microsoft YaHei",sans-serif; color: #8b95a5;
+      }
+      #preview-bar .dots { display: flex; gap: 6px; }
+      #preview-bar .dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+      #preview-toggle {
+        margin-left: auto; cursor: pointer; border: 1px solid #4c5666;
+        background: transparent; color: #61afef; border-radius: 999px;
+        padding: 3px 12px; font-size: 11px; font-weight: 500;
+      }
+      #preview-toggle:hover { background: rgba(97,175,239,.12); }
+    </style>
+  </head>
+  <body>
+    <div id="preview-frame">
+      <div id="preview-bar">
+        <span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span>
+        <span>uTools · 目录速令（离线预览）</span>
+        <button id="preview-toggle">切换主题</button>
+      </div>
+    <!-- ============ 视图 1：命令管理 ============ -->
+    <section class="view" id="view-manage">
+      <!-- 搜索在左，多选 / 新建在右，同一行 -->
+      <div class="toolbar">
+        <div class="searchbar">
+          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+          <input
+            id="search"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="搜索名称 / 程序 / 参数 / 分类…"
+          />
+          <button class="btn text sm hidden" id="btn-clear-search" title="清空搜索">清空</button>
+        </div>
+        <button
+          class="btn tonal sm"
+          id="btn-multi"
+          title="进入多选模式，可批量启用 / 停用 / 删除"
+        >
+          多选
+        </button>
+        <button class="btn filled sm" id="btn-add">新建</button>
+      </div>
+
+      <!-- 分类筛选（左）+ 启用状态筛选（右） -->
+      <div class="filter-row">
+        <div class="cat-bar" id="cat-bar"></div>
+        <div class="segmented xs" id="status-filter">
+          <button data-value="all" class="active">全部</button>
+          <button data-value="on">启用</button>
+          <button data-value="off">停用</button>
+        </div>
+      </div>
+
+      <!-- 批量操作条：只在多选模式下出现 -->
+      <div class="batch-bar hidden" id="batch-bar">
+        <label class="checkbox sm">
+          <input type="checkbox" id="check-all" />
+          <span>全选</span>
+        </label>
+        <button class="btn text sm" id="btn-invert">反选</button>
+        <span class="batch-count" id="batch-count"></span>
+        <div class="spacer"></div>
+        <button class="btn tonal sm" id="btn-batch-off" disabled>停用</button>
+        <button class="btn tonal sm" id="btn-batch-on" disabled>启用</button>
+        <button class="btn danger sm" id="btn-batch-del" disabled>删除</button>
+      </div>
+
+      <main class="list manage-list" id="manage-list"></main>
+    </section>
+
+    <!-- ============ 视图 2：新建 / 编辑（整页，不再是弹窗） ============ -->
+    <section class="view hidden" id="view-editor" aria-label="命令编辑">
+      <div class="view-head">
+        <button class="btn text sm back" id="btn-close-editor" title="返回命令列表（Esc）">
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+          返回
+        </button>
+        <h2 id="editor-title">新建命令</h2>
+      </div>
+
+      <div class="editor-body" id="editor-body">
+        <!-- 起始模板：只在「新建」时出现，默认空模板 -->
+        <div class="field tpl-field hidden" id="tpl-field">
+          <label>起始模板</label>
+          <div class="chips" id="tpl-chips"></div>
+        </div>
+
+        <div class="field">
+          <label>图标</label>
+          <div class="icon-row">
+            <select id="f-icon-type">
+              <option value="">默认（自动识别）</option>
+              <option value="file">图片文件 png / jpg / jpeg / ico</option>
+              <option value="exe">从 EXE 提取图标</option>
+              <option value="folder">文件夹系统图标</option>
+              <option value="ext">按扩展名（如 .txt）</option>
+              <option value="data">自定义 base64</option>
+            </select>
+            <div class="icon-preview">
+              <img id="icon-preview" alt="图标预览" />
+              <span id="icon-preview-text">默认图标</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field hidden" id="icon-value-field">
+          <label>图标文件 / 路径</label>
+          <div class="row">
+            <input id="f-icon-value" type="text" placeholder="选择或粘贴路径" />
+            <button class="btn outlined sm" id="btn-pick-icon">浏览</button>
+          </div>
+        </div>
+
+        <div class="row split">
+          <div class="field">
+            <label>名称</label>
+            <input id="f-name" type="text" placeholder="例如：VS Code 打开" />
+          </div>
+          <div class="field">
+            <label>分类标签</label>
+            <input id="f-category" type="text" placeholder="例如：开发 / 终端 / 系统" />
+            <div class="cat-suggest" id="cat-suggest"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>类型</label>
+          <div class="segmented" id="f-type">
+            <button data-value="command" class="active">执行命令</button>
+            <button data-value="builtin">内置动作</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>匹配方式</label>
+          <div class="match-picker" id="match-picker">
+            <label class="mcheck">
+              <input type="checkbox" data-match="file" />
+              <span>文件</span>
+            </label>
+            <label class="mcheck">
+              <input type="checkbox" data-match="folder" />
+              <span>文件夹</span>
+            </label>
+            <label class="mcheck">
+              <input type="checkbox" data-match="window" />
+              <span>文件夹窗口</span>
+            </label>
+            <!-- 一项都没勾时的提醒：跟勾选框同一行，不额外占一行高度 -->
+            <span class="match-hint hidden" id="match-hint"></span>
+          </div>
+        </div>
+
+        <div class="match-params" id="match-params"></div>
+
+        <div data-when="command">
+          <div class="field">
+            <label>命令 / 程序</label>
+            <div class="row">
+              <input id="f-cmd" type="text" placeholder="例如：code  或  C:\Tools\run.exe" />
+              <button
+                class="btn outlined sm"
+                id="btn-pick-cmd"
+                title="用资源管理器选择程序 / 脚本"
+              >
+                浏览
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>命令参数</label>
+            <div class="match-params" id="cmd-params"></div>
+          </div>
+
+          <div class="field">
+            <label>复制变量</label>
+            <div class="var-grid" id="var-chips"></div>
+            <div class="var-sep" id="var-sep"></div>
+          </div>
+        </div>
+
+        <div data-when="builtin" class="hidden">
+          <div class="field">
+            <label>动作</label>
+            <select id="f-action"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 参数测试：把变量替换后的完整命令行摊开（贴在底栏上方，不用滚回去找） -->
+      <div class="cmd-preview hidden" id="cmd-preview">
+        <div class="cmd-preview-head">
+          <span class="cp-label">测试路径</span>
+          <button class="btn text sm" id="btn-add-dir" title="追加一个或多个文件夹">加目录</button>
+          <button class="btn text sm" id="btn-add-file" title="追加一个或多个文件">加文件</button>
+          <button class="btn text sm" id="btn-clear-test" title="清空测试路径">清空</button>
+          <span class="cp-count" id="cp-count"></span>
+          <div class="spacer"></div>
+          <button class="btn text sm" id="btn-preview-close" title="收起参数测试">收起</button>
+        </div>
+        <textarea
+          id="f-test-paths"
+          rows="2"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="每行一个路径，可以混着填文件和文件夹。选中多项时列表变量（{paths} {qpaths} {names}）才有意义。"
+        ></textarea>
+        <div class="cmd-preview-list" id="cmd-preview-list"></div>
+      </div>
+
+      <div class="editor-foot">
+        <button class="btn tonal sm" id="btn-test">试运行</button>
+        <button class="btn tonal sm" id="btn-preview-cmd" title="不执行，只看变量替换后的完整命令">
+          参数测试
+        </button>
+        <span class="foot-hint" id="foot-hint"></span>
+        <div class="spacer"></div>
+        <button class="btn text sm" id="btn-cancel">取消</button>
+        <button class="btn filled sm" id="btn-save">保存</button>
+      </div>
+    </section>
+
+    <div class="toast hidden" id="toast"></div>
+
+    <script src="mock-api.js"></script>
+    <script src="../assets/app.js"></script>
+  
+    </div>
+    <script>
+      (function () {
+        var frame = document.getElementById('preview-frame');
+        Array.prototype.forEach.call(document.querySelectorAll('body > .view, body > .toast'), function (el) {
+          frame.appendChild(el);
+        });
+        document.getElementById('preview-toggle').addEventListener('click', function () {
+          var cur = document.documentElement.getAttribute('data-theme');
+          document.documentElement.setAttribute('data-theme', cur === 'light' ? 'dark' : 'light');
+        });
+      })();
+    </script>
+  </body>
+</html>

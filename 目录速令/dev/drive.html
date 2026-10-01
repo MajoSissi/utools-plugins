@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>preview driver</title>
+    <style>
+      html, body { margin: 0; padding: 0; background: #0e1116; }
+      iframe { border: 0; display: block; }
+    </style>
+  </head>
+  <body>
+    <iframe id="f" src="/dev/preview.html" width="1200"></iframe>
+    <script>
+      /* 截图驱动：?shot=<list|subtitle|search|searcharg|cat|none|disabled|statusoff|toggle|clickrow|batch|batchall|invert|marquee|multiclick|new|newtpl|editor|cmdtest|varcopy|window|light|cmdparam|follow|namelen|vars|varsep|range>
+       * iframe 与预览页同源，可以直接操作它的 document。 */
+      (function () {
+        var p = new URLSearchParams(location.search);
+        var shot = p.get("shot") || "list";
+        /* 默认跟视口一样大：iframe 比窗口宽会把 drive 页撑出横向滚动条，
+         * body 居中就会整体右移，截出来的图右边被裁掉。 */
+        var h = parseInt(p.get("h") || String(window.innerHeight), 10);
+        var f = document.getElementById("f");
+        f.width = parseInt(p.get("w") || String(window.innerWidth), 10);
+        f.style.height = h + "px";
+
+        function killTransitions(d) {
+          var s = d.createElement("style");
+          s.textContent =
+            "*,*::before,*::after{transition:none !important;animation:none !important}";
+          d.head.appendChild(s);
+        }
+
+        function setCb(d, key, on) {
+          var cb = d.querySelector('[data-match="' + key + '"]');
+          if (!cb) return;
+          cb.checked = on;
+          cb.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+
+        function fire(el, type) {
+          el.dispatchEvent(new Event(type, { bubbles: true }));
+        }
+
+        /* 勾选框只属于多选模式，操作前先确保它开着 */
+        function ensureMulti(d) {
+          var btn = d.getElementById("btn-multi");
+          if (btn && !btn.classList.contains("active")) btn.click();
+        }
+
+        /* 点某一行操作区里的按钮（列表会重绘，必须每次重新查询） */
+        function clickRowBtn(d, rowIndex, act) {
+          var btns = d.querySelectorAll('#manage-list [data-act="' + act + '"]');
+          if (btns[rowIndex]) btns[rowIndex].click();
+        }
+
+        /* 把 .editor-body 滚到某个元素附近（弹层内部才有滚动条） */
+        function scrollToSel(d, sel, offset) {
+          var box = d.querySelector(".editor-body");
+          var target = d.querySelector(sel);
+          if (!box || !target) return;
+          box.scrollTop +=
+            target.getBoundingClientRect().top - box.getBoundingClientRect().top - (offset || 0);
+        }
+
+        f.addEventListener("load", function () {
+          var d = f.contentDocument;
+          var w = f.contentWindow;
+          setTimeout(function () {
+            killTransitions(d);
+            /* ?theme=light 可以给任意 shot 切亮色（在跑交互之前切，避免过渡停在中间态） */
+            if (p.get("theme") === "light") d.documentElement.setAttribute("data-theme", "light");
+
+            if (shot === "list") {
+              /* 首屏：搜索栏 + 分类标签 + 列表徽章 */
+            }
+
+            if (shot === "search" || shot === "none" || shot === "searcharg") {
+              var s = d.getElementById("search");
+              /* searcharg：按「命令参数」的内容搜，验证参数已进入搜索索引 */
+              s.value = shot === "none" ? "zzz" : shot === "searcharg" ? "Set-Location" : "终端";
+              fire(s, "input");
+            }
+
+            if (shot === "cat") {
+              var chips = d.querySelectorAll("#cat-bar .cat-chip");
+              /* 第二个 chip = 第一个真实分类 */
+              if (chips[1]) chips[1].click();
+            }
+
+            if (shot === "disabled") {
+              /* 停用第 1、3 行：看「停用/启用」文本按钮与整行变灰。
+                 每点一次列表就整块重绘，所以 clickRowBtn 每次重新查询。 */
+              clickRowBtn(d, 0, "toggle");
+              clickRowBtn(d, 2, "toggle");
+            }
+
+            if (shot === "statusoff") {
+              /* 状态筛选切到「停用」：只留停用的命令 */
+              clickRowBtn(d, 0, "toggle");
+              clickRowBtn(d, 2, "toggle");
+              var off = d.querySelector('#status-filter [data-value="off"]');
+              if (off) off.click();
+            }
+
+            if (shot === "new") {
+              /* 新建：看起始模板条（默认空模板） + 匹配方式默认全不勾 + 「至少选中一项」 */
+              d.getElementById("btn-add").click();
+            }
+
+            if (shot === "newtpl") {
+              /* 新建后点一个模板，看表单被填充 + 模板条选中态 */
+              d.getElementById("btn-add").click();
+              setTimeout(function () {
+                var chips = d.querySelectorAll("#tpl-chips [data-preset]");
+                /* chips[0] = 空模板，chips[3] = Windows Terminal */
+                if (chips[3]) chips[3].click();
+              }, 200);
+            }
+
+            if (shot === "toggle") {
+              /* 点第 2 行的「停用」文本按钮 */
+              clickRowBtn(d, 1, "toggle");
+            }
+
+            if (shot === "batch") {
+              /* 多选模式 + 勾上 1、2、4 行，看批量操作条与选中态 */
+              ensureMulti(d);
+              var boxes = d.querySelectorAll('#manage-list input[data-act="select"]');
+              [0, 1, 3].forEach(function (i) {
+                if (!boxes[i]) return;
+                boxes[i].checked = true;
+                fire(boxes[i], "change");
+              });
+            }
+
+            if (shot === "batchall") {
+              /* 全选：验证「全选」框的勾选态与已选计数 */
+              ensureMulti(d);
+              var all = d.getElementById("check-all");
+              all.checked = true;
+              fire(all, "change");
+            }
+
+            if (shot === "drag") {
+              /* 合成 HTML5 拖拽：把第 1 行拖到第 3 行的下半区（= 插到它后面）。
+                 DragEvent 要带上同一个 DataTransfer 实例，否则拿不到 dataTransfer。 */
+              var items = d.querySelectorAll("#manage-list .item");
+              if (items.length > 2) {
+                var dt = new DataTransfer();
+                var handle = items[0].querySelector(".drag-handle");
+                handle.dispatchEvent(
+                  new DragEvent("dragstart", { bubbles: true, dataTransfer: dt })
+                );
+                var box = items[2].getBoundingClientRect();
+                var opts = {
+                  bubbles: true,
+                  dataTransfer: dt,
+                  clientY: box.bottom - 4,
+                };
+                items[2].dispatchEvent(new DragEvent("dragover", opts));
+                items[2].dispatchEvent(new DragEvent("drop", opts));
+              }
+            }
+
+            if (shot === "invert") {
+              /* 反选：先勾 2 行，再反选，应变成「除了那 2 行以外全选中」 */
+              ensureMulti(d);
+              var ib = d.querySelectorAll('#manage-list input[data-act="select"]');
+              [0, 1].forEach(function (i) {
+                if (!ib[i]) return;
+                ib[i].checked = true;
+                fire(ib[i], "change");
+              });
+              d.getElementById("btn-invert").click();
+            }
+
+            if (shot === "subtitle") {
+              /* 副标题省略路径：套「Git Bash Here」模板（它的 cmd 是完整路径
+                 C:\Program Files\Git\git-bash.exe），保存后看列表末行的副标题 */
+              d.getElementById("btn-add").click();
+              setTimeout(function () {
+                var chip = d.querySelector('#tpl-chips [data-preset="4"]');
+                if (chip) chip.click();
+                setTimeout(function () {
+                  var save = d.getElementById("btn-save");
+                  if (save) save.click();
+                }, 200);
+              }, 200);
+            }
+
+            if (shot === "cmdtest" || shot === "varcopy") {
+              /* 参数测试 / 变量复制：都先打开第 1 行（VS Code 打开）的编辑页 */
+              var pb = d.querySelectorAll('#manage-list [data-act="edit"]');
+              if (pb.length) pb[0].click();
+              setTimeout(function () {
+                if (shot === "cmdtest") {
+                  /* 多勾一个「文件」，好看出「按匹配方式分行」 */
+                  setCb(d, "file", true);
+                  var pt = d.getElementById("btn-preview-cmd");
+                  if (pt) pt.click();
+                  setTimeout(function () {
+                    /* 多条测试路径 + 列表变量：一次选两个夹子，看 {qpaths:, } 怎么拼 */
+                    var arg = d.querySelector(
+                      '#cmd-params .match-card[data-key="folder"] [data-cp="args"]'
+                    );
+                    if (arg) {
+                      arg.value = "-p {qpaths:, }";
+                      arg.dispatchEvent(new Event("input", { bubbles: true }));
+                    }
+                    var tp = d.getElementById("f-test-paths");
+                    if (tp) {
+                      tp.value = "D:\\Code-Project\\uTools\nD:\\Downloads\\我的文件夹";
+                      tp.dispatchEvent(new Event("input", { bubbles: true }));
+                    }
+                  }, 200);
+                } else {
+                  /* 变量改成点击复制：点一下 {qpath}，应当弹出「已复制」提示 */
+                  scrollToSel(d, "#var-chips", 150);
+                  var chip = d.querySelector('#var-chips [data-var="{qpath}"]');
+                  if (chip) chip.click();
+                }
+              }, 300);
+            }
+
+            if (shot === "clickrow") {
+              /* 普通模式单击整行（非按钮区域）：不应该弹出编辑弹层，列表也原样不动 */
+              var ci = d.querySelectorAll("#manage-list .item");
+              if (ci.length) {
+                var cr = ci[0].getBoundingClientRect();
+                var cx = cr.left + 300;
+                var cy = cr.top + 20;
+                ["mousedown", "mouseup", "click"].forEach(function (t) {
+                  ci[0].dispatchEvent(
+                    new MouseEvent(t, { bubbles: true, button: 0, clientX: cx, clientY: cy })
+                  );
+                });
+              }
+            }
+
+            if (shot === "marquee" || shot === "multiclick") {
+              /* 框选：mousedown 在第 1 行 → mousemove 到第 3 行下半区。
+                 注意 mousemove 的监听挂在**页面自己的 document** 上，要用 d.dispatchEvent。
+                 不派发 mouseup，好把「框还在拉」的中间态截下来。 */
+              ensureMulti(d);
+              var its = d.querySelectorAll("#manage-list .item");
+              if (its.length >= 3) {
+                var ra = its[0].getBoundingClientRect();
+                var rb = its[2].getBoundingClientRect();
+                var from = { x: ra.left + 20, y: ra.top + 5 };
+                var to =
+                  shot === "multiclick"
+                    ? from
+                    : { x: rb.right - 24, y: rb.bottom - 4 };
+                its[0].dispatchEvent(
+                  new MouseEvent("mousedown", {
+                    bubbles: true,
+                    button: 0,
+                    clientX: from.x,
+                    clientY: from.y,
+                  })
+                );
+                if (shot === "multiclick") {
+                  /* 单击：按下就松开，应当只切换这一行的勾选 */
+                  d.dispatchEvent(
+                    new MouseEvent("mouseup", { bubbles: true, clientX: from.x, clientY: from.y })
+                  );
+                } else {
+                  d.dispatchEvent(
+                    new MouseEvent("mousemove", { bubbles: true, clientX: to.x, clientY: to.y })
+                  );
+                }
+              }
+            }
+
+            if (shot === "editor" || shot === "window" || shot === "light" || shot === "cmdparam") {
+              /* 打开第 1 行（VS Code 打开）的编辑弹层 */
+              var editBtns = d.querySelectorAll('#manage-list [data-act="edit"]');
+              if (editBtns.length) editBtns[0].click();
+              setTimeout(function () {
+                /* 勾上三种匹配，看三张独立的匹配条件卡 + 三张命令参数卡 */
+                setCb(d, "folder", true);
+                setCb(d, "file", true);
+                setCb(d, "window", true);
+                if (shot === "light") {
+                  d.documentElement.setAttribute("data-theme", "light");
+                }
+                if (shot === "window") {
+                  var body0 = d.querySelector(".editor-body");
+                  if (body0) body0.scrollTop = body0.scrollHeight;
+                }
+                if (shot === "cmdparam") {
+                  scrollToSel(d, "#cmd-params", 70);
+                }
+              }, 300);
+            }
+
+            if (shot === "follow") {
+              var eb = d.querySelectorAll('#manage-list [data-act="edit"]');
+              if (eb.length) eb[0].click();
+              setTimeout(function () {
+                setCb(d, "folder", true);
+                setCb(d, "file", true);
+                /* 让「文件」的命令参数跟随「文件夹」 */
+                var sel = d.querySelector('#cmd-params .match-card[data-key="file"] [data-role="follow"]');
+                if (sel) {
+                  sel.value = "folder";
+                  fire(sel, "change");
+                }
+                scrollToSel(d, "#cmd-params", 70);
+              }, 300);
+            }
+
+            if (shot === "range") {
+              /* 原生 select 的 popup 截不到，把它摊成内联 listbox 才能看到三个选项文案 */
+              var rb = d.querySelectorAll('#manage-list [data-act="edit"]');
+              if (rb.length) rb[0].click();
+              setTimeout(function () {
+                setCb(d, "file", true);
+                var sel = d.querySelector('#match-params .match-card[data-key="file"] [data-p="range"]');
+                if (!sel) return;
+                sel.setAttribute("size", "3");
+                sel.style.height = "auto";
+                sel.style.padding = "4px";
+                var card = sel.closest(".match-card");
+                if (card) card.style.marginBottom = "70px";
+                scrollToSel(d, "#match-params", 20);
+              }, 300);
+            }
+
+            if (shot === "namelen" || shot === "vars" || shot === "varsep") {
+              var eb2 = d.querySelectorAll('#manage-list [data-act="edit"]');
+              if (eb2.length) eb2[0].click();
+              setTimeout(function () {
+                if (shot === "namelen") {
+                  /* 勾上「文件」，把名称字符数填上，看长度行 + 提示 + 与扩展名合并 */
+                  setCb(d, "file", true);
+                  var card = '#match-params .match-card[data-key="file"]';
+                  var range = d.querySelector(card + ' [data-p="range"]');
+                  if (range) {
+                    range.value = "ext";
+                    fire(range, "change");
+                  }
+                  var nmin = d.querySelector(card + ' [data-p="nameMin"]');
+                  if (nmin) {
+                    nmin.value = "3";
+                    fire(nmin, "input");
+                  }
+                  var nmax = d.querySelector(card + ' [data-p="nameMax"]');
+                  if (nmax) {
+                    nmax.value = "24";
+                    fire(nmax, "input");
+                  }
+                  var exts = d.querySelector(card + ' [data-p="exts"]');
+                  if (exts) {
+                    exts.value = "png, jpg";
+                    fire(exts, "input");
+                  }
+                  /* 对齐到整块匹配条件，让「文件夹」卡也露出来（它同样有名称字符数） */
+                  scrollToSel(d, "#match-params", 0);
+                } else if (shot === "vars") {
+                  /* 滚到变量区：完整备注 + 列表变量的分隔符示例表 */
+                  scrollToSel(d, "#var-chips", 150);
+                } else {
+                  /* varsep：只截分隔符示例表那一段 */
+                  scrollToSel(d, "#var-sep", 90);
+                }
+              }, 300);
+            }
+          }, 400);
+        });
+      })();
+    </script>
+  </body>
+</html>

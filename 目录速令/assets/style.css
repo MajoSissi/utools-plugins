@@ -1,0 +1,1667 @@
+/* ==========================================================================
+   目录速令 —— Material Design 3 × One Dark（暗蓝）
+   ==========================================================================
+   设计令牌说明：
+   - 颜色：MD3 语义色角色（primary / surface-container / outline ...），
+           色相取自 Atom One Dark 的蓝 (#61afef)，底色做成偏蓝的深灰。
+   - 形状：MD3 形状刻度 —— 按钮/芯片用 full，卡片 16，对话框 28。
+   - 状态层：MD3 的 hover/pressed 叠加层用 rgba 预置色实现
+             （不用 color-mix，避免低版本 Chromium 不支持）。
+   ========================================================================== */
+
+:root {
+  /* --- MD3 形状刻度 --- */
+  --shape-xs: 4px;
+  --shape-sm: 8px;
+  --shape-md: 12px;
+  --shape-lg: 16px;
+  --shape-xl: 28px;
+  --shape-full: 999px;
+
+  --font: "Segoe UI Variable", "Segoe UI", -apple-system, "Microsoft YaHei",
+    "PingFang SC", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "Cascadia Mono", "JetBrains Mono", Consolas, "Courier New", monospace;
+
+  --dur: 0.16s;
+}
+
+/* --------------------------------------------------------------------------
+   Dark scheme —— One Dark 暗蓝
+   -------------------------------------------------------------------------- */
+
+html[data-theme="dark"] {
+  /* 让原生控件（下拉列表、滚动条、日期选择器等）跟随暗色 */
+  color-scheme: dark;
+
+  --surface: #15181e;
+  --surface-container-lowest: #101318;
+  --surface-container-low: #1b1f27;
+  --surface-container: #21262f;
+  --surface-container-high: #272d38;
+  --surface-container-highest: #2e3541;
+
+  --on-surface: #c3ccd9;
+  --on-surface-variant: #8b95a5;
+  --outline: #4c5666;
+  --outline-variant: #303845;
+
+  --primary: #61afef;
+  --primary-hover: #7dc0f6;
+  --primary-pressed: #4e9ede;
+  --on-primary: #0c2033;
+  --primary-container: #1c3f5e;
+  --on-primary-container: #cfe4fb;
+
+  --secondary: #56b6c2;
+  --secondary-container: #173f47;
+  --on-secondary-container: #bfe6ec;
+
+  --tertiary: #c678dd;
+  --tertiary-container: #43264f;
+  --on-tertiary-container: #edd6f7;
+
+  --error: #e06c75;
+  --error-container: #4a2429;
+  --on-error-container: #ffdadb;
+
+  --success: #98c379;
+
+  --state-hover: rgba(195, 204, 217, 0.08);
+  --state-press: rgba(195, 204, 217, 0.13);
+
+  /* 列表里被勾选（待批量操作）的行底色：主色的柔和版，
+     不用 --primary-container 是因为它太饱和，会把行里的勾选框和标签压下去 */
+  --picked: rgba(97, 175, 239, 0.14);
+
+  /* 框选矩形的填充：比 --picked 明显一点，不然在暗底上几乎看不见 */
+  --marquee: rgba(97, 175, 239, 0.16);
+}
+
+/* --------------------------------------------------------------------------
+   Light scheme —— 同色相 seed 的 MD3 亮色（uTools 处于亮色模式时）
+   -------------------------------------------------------------------------- */
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --surface: #f6f8fc;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #eef2f8;
+  --surface-container: #e7edf6;
+  --surface-container-high: #dfe7f2;
+  --surface-container-highest: #d6e0ee;
+
+  --on-surface: #18222e;
+  --on-surface-variant: #59647a;
+  --outline: #78839a;
+  --outline-variant: #c8d2e2;
+
+  --primary: #2b6cb0;
+  --primary-hover: #3a7cc2;
+  --primary-pressed: #235a94;
+  --on-primary: #ffffff;
+  --primary-container: #cfe4fb;
+  --on-primary-container: #0c2b47;
+
+  --secondary: #17707d;
+  --secondary-container: #c2e8ee;
+  --on-secondary-container: #053039;
+
+  --tertiary: #7b3f96;
+  --tertiary-container: #edd6f7;
+  --on-tertiary-container: #331040;
+
+  --error: #b3261e;
+  --error-container: #ffdad8;
+  --on-error-container: #410e0b;
+
+  --success: #4a7a2c;
+
+  --state-hover: rgba(24, 34, 46, 0.07);
+  --state-press: rgba(24, 34, 46, 0.12);
+
+  --picked: rgba(43, 108, 176, 0.12);
+
+  --marquee: rgba(43, 108, 176, 0.16);
+}
+
+/* --------------------------------------------------------------------------
+   基础
+   -------------------------------------------------------------------------- */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --------------------------------------------------------------------------
+   MD3 按钮
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 18px;
+  border: none;
+  border-radius: var(--shape-full);
+  background: transparent;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--dur), color var(--dur),
+    border-color var(--dur), box-shadow var(--dur);
+}
+
+.btn.sm {
+  height: 30px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+/* filled */
+.btn.filled {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.btn.filled:hover {
+  background: var(--primary-hover);
+}
+
+.btn.filled:active {
+  background: var(--primary-pressed);
+}
+
+/* tonal */
+.btn.tonal {
+  background: var(--secondary-container);
+  color: var(--on-secondary-container);
+}
+
+.btn.tonal:hover {
+  box-shadow: inset 0 0 0 999px var(--state-hover);
+}
+
+/* 切换类按钮的「已开启」态（多选模式） */
+.btn.tonal.active {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: none;
+}
+
+/* outlined */
+.btn.outlined {
+  border: 1px solid var(--outline);
+  color: var(--primary);
+}
+
+.btn.outlined:hover {
+  background: var(--state-hover);
+}
+
+/* text */
+.btn.text {
+  padding: 0 12px;
+  color: var(--primary);
+}
+
+.btn.text:hover {
+  background: var(--state-hover);
+}
+
+/* danger */
+.btn.danger {
+  border: 1px solid var(--error);
+  color: var(--error);
+}
+
+.btn.danger:hover {
+  background: var(--error-container);
+}
+
+.btn.icon {
+  height: 32px;
+  width: 32px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  border-radius: var(--shape-full);
+  color: var(--on-surface-variant);
+}
+
+.btn.icon:hover {
+  background: var(--state-hover);
+}
+
+.btn[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* --------------------------------------------------------------------------
+   kbd
+   -------------------------------------------------------------------------- */
+
+kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: var(--shape-xs);
+  background: var(--surface-container-highest);
+  color: var(--on-surface-variant);
+  font-family: var(--mono);
+  font-size: 10px;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   输入控件（MD3 描边式文本框）
+   -------------------------------------------------------------------------- */
+
+input[type="text"],
+textarea,
+select {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--outline);
+  border-radius: var(--shape-sm);
+  background: transparent;
+  color: var(--on-surface);
+  font-family: inherit;
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color var(--dur), box-shadow var(--dur);
+}
+
+/* 多行框不跟着单行框定高，由 rows / min-height 决定 */
+textarea {
+  height: auto;
+  padding: 8px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+input[type="text"]:hover:not(:disabled),
+textarea:hover:not(:disabled) {
+  border-color: var(--on-surface-variant);
+}
+
+input[type="text"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+input[type="text"]:disabled {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--on-surface-variant);
+  opacity: 0.75;
+}
+
+select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+/* 展开的下拉列表也跟随主题（配合 color-scheme） */
+select option,
+select optgroup {
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  font-family: inherit;
+  font-size: 12.5px;
+}
+
+select optgroup {
+  color: var(--on-surface-variant);
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   工具栏：搜索（左）+ 新建（右）同一行；分类筛选单独一行
+   -------------------------------------------------------------------------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 10px 8px;
+}
+
+.searchbar {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--shape-full);
+  background: var(--surface-container-high);
+  transition: box-shadow var(--dur);
+}
+
+.searchbar:focus-within {
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.searchbar input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12.5px;
+}
+
+.searchbar input:hover,
+.searchbar input:focus {
+  border: none;
+  box-shadow: none;
+}
+
+.search-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: var(--on-surface-variant);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.searchbar:focus-within .search-icon {
+  stroke: var(--primary);
+}
+
+/* 新建按钮：固定宽度，不参与搜索框的伸缩 */
+.toolbar > .btn {
+  flex: 0 0 auto;
+  height: 38px;
+}
+
+/* 分类（左）+ 启用状态（右）同一行 */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px 8px;
+}
+
+.cat-bar {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--shape-full);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-family: inherit;
+  font-size: 11.5px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur), border-color var(--dur);
+}
+
+.cat-chip b {
+  font-weight: 500;
+  font-size: 10.5px;
+  opacity: 0.7;
+}
+
+.cat-chip:hover {
+  background: var(--state-hover);
+  color: var(--on-surface);
+}
+
+.cat-chip.active {
+  background: var(--primary-container);
+  border-color: transparent;
+  color: var(--on-primary-container);
+}
+
+/* 当前搜索词下没有命中的分类：变灰但仍可点 */
+.cat-chip.dim {
+  opacity: .45;
+}
+
+.cat-chip.dim:hover {
+  opacity: .75;
+}
+
+.cat-chip.sm {
+  height: 24px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+/* --------------------------------------------------------------------------
+   批量开关条（列表非空时常驻）
+   -------------------------------------------------------------------------- */
+
+/* 批量操作条：只在多选模式出现。所有控件统一 30px 高，勾选框和按钮才会齐平。 */
+.batch-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 8px;
+}
+
+.batch-bar .btn {
+  height: 30px;
+}
+
+/* 「全选」跟按钮同一行，只对齐高度和左右留白；不套外边框。
+   加边框会把它变成一颗"胶囊按钮"，跟右边的文字按钮混在一起分不清主次。 */
+.batch-bar .checkbox.sm {
+  height: 30px;
+  padding: 0 2px;
+}
+
+/* 反选是不带边框的文字按钮，跟左边的「全选」拉开主次 */
+.batch-bar #btn-invert {
+  padding: 0 8px;
+}
+
+.batch-count {
+  font-size: 11.5px;
+  color: var(--on-surface-variant);
+}
+
+/* 全选框跟正文同尺寸，只把文字收小，免得在工具条里太抢眼 */
+.checkbox.sm {
+  gap: 8px;
+  font-size: 11.5px !important;
+}
+
+/* --------------------------------------------------------------------------
+   列表
+   -------------------------------------------------------------------------- */
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 10px 10px;
+}
+
+.list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.list::-webkit-scrollbar-thumb {
+  background: var(--outline-variant);
+  border-radius: var(--shape-full);
+}
+
+.list::-webkit-scrollbar-thumb:hover {
+  background: var(--outline);
+}
+
+.list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px 10px 8px 6px;
+  margin-bottom: 3px;
+  border-radius: var(--shape-md);
+  transition: background var(--dur);
+}
+
+/* --------------------------------------------------------------------------
+   拖拽排序（替代原来的 ↑ ↓ 按钮）
+   -------------------------------------------------------------------------- */
+
+.drag-handle {
+  flex: 0 0 14px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--outline);
+  cursor: grab;
+  transition: color var(--dur);
+}
+
+.drag-handle svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.drag-handle:hover {
+  color: var(--primary);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* 正在拖的那一行：压暗，表示它已经被「拿起来」了 */
+.item.dragging {
+  opacity: 0.4;
+}
+
+/* 落点指示线用伪元素画，避免和 .item.picked:hover 的 box-shadow 互相覆盖 */
+.item.drop-before::before,
+.item.drop-after::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--primary);
+}
+
+.item.drop-before::before {
+  top: -1px;
+}
+
+.item.drop-after::before {
+  bottom: -1px;
+}
+
+/* --------------------------------------------------------------------------
+   框选（多选模式）—— 多选时拖拽排序被关掉，同一个手势改成拉框选行
+   -------------------------------------------------------------------------- */
+
+/* 拉框时不要把文字拖蓝 */
+.list.multi {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.list.multi .item {
+  cursor: pointer;
+}
+
+/* 框住的候选行：先给个预览反馈，松手才真正写进 selection */
+.item.mb-hit {
+  background: var(--picked);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+/* 框本身。position:fixed + client 坐标，不用管列表滚到哪了。
+   pointer-events:none 很关键 —— 否则鼠标一动框就盖住行、打断 mousemove。 */
+.marquee {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  border: 1px solid var(--primary);
+  border-radius: var(--shape-xs);
+  background: var(--marquee);
+}
+
+.item:hover {
+  background: var(--state-hover);
+}
+
+/* 被勾选（待批量操作）的行：一层柔和主色底，和 hover 区分开 */
+.item.picked {
+  background: var(--picked);
+}
+
+.item.picked:hover {
+  background: var(--picked);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+/* 勾选框列：常驻但弱化，hover / 勾选后才完全显形 */
+.item-check {
+  flex: 0 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.item-check input[type="checkbox"] {
+  opacity: 0.55;
+  transition: opacity var(--dur), background var(--dur), border-color var(--dur);
+}
+
+.item:hover .item-check input[type="checkbox"],
+.item.picked .item-check input[type="checkbox"],
+.item-check input[type="checkbox"]:focus-visible {
+  opacity: 1;
+}
+
+/* 停用的命令：内容变淡，但按钮保持可点 */
+.item.off .item-icon,
+.item.off .item-body {
+  opacity: 0.42;
+}
+
+.item.off .item-badges {
+  opacity: 0.55;
+}
+
+.item-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.item-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.glyph {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  letter-spacing: 0.3px;
+}
+
+.item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-title {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 3px;
+}
+
+/* 信息标签：弱化处理，和右边的操作按钮拉开层次 */
+.item-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.item-badge {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 3px 9px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--shape-sm);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 分类标签用不同的色调，和匹配方式标签区分开 */
+.item-badge.cat {
+  border-color: transparent;
+  background: var(--tertiary-container);
+  color: var(--on-tertiary-container);
+}
+
+/* --------------------------------------------------------------------------
+   每项的操作按钮 —— 要有明确的「按得下去」的观感
+   -------------------------------------------------------------------------- */
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  padding-left: 10px;
+  border-left: 1px solid var(--outline-variant);
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--outline);
+  border-radius: var(--shape-full);
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur), border-color var(--dur),
+    box-shadow var(--dur);
+}
+
+.icon-btn:hover {
+  background: var(--surface-container-highest);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.icon-btn:active {
+  background: var(--state-press);
+}
+
+/* 启用 / 停用：文本按钮，夹在「编辑」和「删除」中间 */
+.icon-btn.toggle {
+  min-width: 46px;
+}
+
+/* 已停用的行整体发灰，只有这颗「启用」是亮点 —— 它是唯一的恢复出口 */
+.icon-btn.toggle.off {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.icon-btn.toggle.off:hover {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  border-color: var(--primary);
+}
+
+/* 删除：默认就带警示色，避免误当成普通按钮 */
+.icon-btn.del {
+  color: var(--error);
+  border-color: var(--error);
+  background: transparent;
+}
+
+.icon-btn.del:hover {
+  background: var(--error-container);
+  border-color: var(--error);
+  color: var(--on-error-container);
+}
+
+.icon-btn[disabled] {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.icon-btn[disabled]:hover {
+  background: var(--surface-container-high);
+  border-color: var(--outline);
+  color: var(--on-surface-variant);
+}
+
+.empty {
+  text-align: center;
+  color: var(--on-surface-variant);
+  padding: 56px 24px;
+  line-height: 1.9;
+}
+
+.empty strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-surface);
+  margin-bottom: 6px;
+}
+
+.empty .btn {
+  margin-top: 14px;
+}
+
+.status.show {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   编辑视图（占满整个界面，不是弹层）
+   —— 没有蒙层、没有 max-width 卡片、没有阴影；就是 .view 的第二屏
+   -------------------------------------------------------------------------- */
+
+.view-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.view-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* 返回按钮里的箭头：跟搜索图标同一套线性样式 */
+.btn .chevron {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 往左偏一点，让箭头视觉上贴住内容左边线（跟下面的字段对齐） */
+.btn.back {
+  margin-left: -10px;
+  padding: 0 10px;
+  color: var(--on-surface-variant);
+}
+
+.btn.back:hover {
+  color: var(--primary);
+}
+
+.editor-body {
+  padding: 12px 20px 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.editor-body::-webkit-scrollbar-thumb {
+  background: var(--outline);
+  border-radius: var(--shape-full);
+}
+
+/* --------------------------------------------------------------------------
+   参数测试结果：贴在底栏上方的一条，点「参数测试」才展开
+   -------------------------------------------------------------------------- */
+
+.cmd-preview {
+  flex: 0 0 auto;
+  max-height: 260px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--surface-container-low);
+}
+
+.cmd-preview-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 20px 4px;
+}
+
+.cp-label {
+  flex: 0 0 auto;
+  margin-right: 2px;
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+
+/* 「已选 N 项」跟着按钮右侧，别让它把「收起」挤走 */
+.cp-count {
+  flex: 0 0 auto;
+  margin-left: 2px;
+  font-size: 10.5px;
+  color: var(--on-surface-variant);
+}
+
+/* 测试路径：多行，一行一个路径（可以混着填文件和文件夹）
+   width: auto 是为了「100% + 左右 20px 外边距」不撑破容器，靠 align-self 拉伸 */
+#f-test-paths {
+  width: auto;
+  margin: 0 20px 6px;
+  min-height: 46px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.cmd-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 20px 10px;
+  overflow-y: auto;
+}
+
+/* 一行 = 一种匹配方式。整行可点，点了就复制那条命令。 */
+.cp-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 9px;
+  border-radius: var(--shape-sm);
+  background: var(--surface-container-high);
+  cursor: pointer;
+  transition: background var(--dur), box-shadow var(--dur);
+}
+
+.cp-row:hover {
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.cp-mode {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--primary);
+}
+
+.cp-line {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--on-surface);
+  word-break: break-all;
+}
+
+.cp-cwd {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  color: var(--on-surface-variant);
+}
+
+.cp-empty {
+  padding: 4px 0 6px;
+  font-size: 11.5px;
+  color: var(--on-surface-variant);
+}
+
+.foot-hint {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding-left: 4px;
+  font-size: 11px;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+.field > label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--on-surface-variant);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.field > label em.tip {
+  font-style: normal;
+  opacity: 0.75;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 一行里排多个字段时，行本身负责下边距，字段自身不再叠加 */
+.row > .field {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+/* 4 个数值输入并排：选中个数 ×2 + 名称字符数 ×2，省掉两整行 */
+.row.quad {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* 「名称匹配」下拉 + 它对应的条件输入框：下拉窄、输入框吃掉剩余宽度 */
+.row.pair {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.row.pair > .field {
+  flex: 1 1 0;
+}
+
+.row.pair > .field:first-child {
+  flex: 0 0 128px;
+}
+
+/* 两个短文本字段并排（名称 + 分类标签） */
+.row.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+  /* 必须顶对齐：分类标签那格底下挂着「分类建议」，
+     一旦它有高度、而 .row 的 align-items:center 还在生效，
+     两个 label / 输入框就会错开半个身位 */
+  align-items: start;
+}
+
+.divider {
+  height: 1px;
+  background: var(--outline-variant);
+  margin: 14px 0;
+}
+
+/* --------------------------------------------------------------------------
+   匹配方式：勾选 + 每种方式的参数卡
+   -------------------------------------------------------------------------- */
+
+.match-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mcheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--outline);
+  border-radius: var(--shape-full);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur), border-color var(--dur);
+}
+
+.mcheck:hover {
+  background: var(--state-hover);
+}
+
+.mcheck.on {
+  background: var(--secondary-container);
+  border-color: transparent;
+  color: var(--on-secondary-container);
+}
+
+.match-hint {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+
+.match-hint.warn {
+  color: var(--error);
+}
+
+.match-params {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.match-card {
+  padding: 12px 14px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--shape-md);
+  background: var(--surface-container);
+}
+
+.match-card.following {
+  border-style: dashed;
+  border-color: var(--secondary);
+}
+
+/* 跟随中的命令参数卡：收起参数框，只留标题 + 参数来源 + 一行说明，少占地方 */
+.match-card.following .match-card-body {
+  display: none;
+}
+
+.match-card.following .match-card-head {
+  margin-bottom: 0;
+}
+
+.match-card-note {
+  display: none;
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--on-surface-variant);
+}
+
+.match-card.following .match-card-note {
+  display: block;
+}
+
+.match-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.match-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--secondary);
+}
+
+.follow-box {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+
+.follow-box select {
+  width: auto;
+  height: 28px;
+  padding: 0 26px 0 10px;
+  font-size: 11.5px;
+  background-size: 4px 4px, 4px 4px;
+  background-position: calc(100% - 14px) 50%, calc(100% - 10px) 50%;
+}
+
+.match-card-body .field {
+  margin-bottom: 8px;
+}
+
+/* 卡片里成行的字段：间距由 .row 统一负责，字段自身不再叠加下边距 */
+.match-card-body .row > .field {
+  margin-bottom: 0;
+}
+
+.match-card-body .field:last-child {
+  margin-bottom: 0;
+}
+
+.match-card-body input {
+  height: 32px;
+  font-size: 12px;
+}
+
+/* 收起后整个卡片只剩「参数来源」这一个下拉可操作，把它做成焦点而不是压暗 */
+.match-card.following .follow-box select {
+  border-color: var(--secondary);
+  color: var(--secondary);
+}
+
+select:disabled {
+  opacity: 0.55;
+  border-style: dashed;
+  cursor: default;
+}
+
+.cat-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* 没有建议时彻底不占高度（否则白留 8px，把同一行的「名称」挤歪） */
+.cat-suggest:empty {
+  display: none;
+}
+
+.suggest-label {
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+
+.checkbox {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  color: var(--on-surface) !important;
+  font-size: 12.5px !important;
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   自定义勾选框（MD3 checkbox）
+   —— 不用 accent-color，低版本 Chromium 不生效会掉回系统原生样式
+   -------------------------------------------------------------------------- */
+
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--outline);
+  border-radius: var(--shape-xs);
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--dur), border-color var(--dur);
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--on-surface-variant);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 4px;
+  height: 9px;
+  border: solid var(--on-primary);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* --------------------------------------------------------------------------
+   MD3 分段按钮
+   -------------------------------------------------------------------------- */
+
+.segmented {
+  display: inline-flex;
+  height: 34px;
+  border: 1px solid var(--outline);
+  border-radius: var(--shape-full);
+  overflow: hidden;
+}
+
+.segmented button {
+  border: none;
+  border-right: 1px solid var(--outline);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 0 14px;
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur);
+}
+
+.segmented button:last-child {
+  border-right: none;
+}
+
+.segmented button:hover {
+  background: var(--state-hover);
+}
+
+.segmented button.active {
+  background: var(--secondary-container);
+  color: var(--on-secondary-container);
+}
+
+/* 紧凑变体：跟分类芯片（26px）同高，放同一行不打架 */
+.segmented.xs {
+  height: 26px;
+  flex: 0 0 auto;
+}
+
+.segmented.xs button {
+  padding: 0 11px;
+  font-size: 11.5px;
+}
+
+/* --------------------------------------------------------------------------
+   MD3 芯片（模板）
+   -------------------------------------------------------------------------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--outline);
+  border-radius: var(--shape-sm);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur), border-color var(--dur);
+}
+
+.chip:hover {
+  background: var(--state-hover);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.chip.tpl {
+  font-family: var(--font);
+  font-size: 12px;
+}
+
+/* 当前生效的模板 */
+.chip.tpl.on {
+  background: var(--secondary-container);
+  border-color: transparent;
+  color: var(--on-secondary-container);
+}
+
+/* 起始模板条：跟下面的表单字段拉开一点距离 */
+.tpl-field {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+/* --------------------------------------------------------------------------
+   变量说明网格（点一下插入到光标处）
+   -------------------------------------------------------------------------- */
+
+.var-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 6px;
+}
+
+.var-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--shape-sm);
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur);
+}
+
+.var-item:hover {
+  background: var(--state-hover);
+}
+
+.var-item:hover code {
+  color: var(--primary-hover);
+}
+
+.var-item code {
+  flex: 0 0 auto;
+  min-width: 60px;
+  color: var(--primary);
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.var-item span {
+  flex: 1;
+  min-width: 0;
+  color: var(--on-surface-variant);
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   列表变量的分隔符示例（可点复制）
+   -------------------------------------------------------------------------- */
+
+.var-sep {
+  margin-top: 8px;
+  padding: 8px 10px 6px;
+  border-radius: var(--shape-md);
+  background: var(--surface-container-low);
+}
+
+.var-sep-title {
+  margin-bottom: 4px;
+  font-size: 10.5px;
+  color: var(--on-surface-variant);
+}
+
+/* 一行 = 一个写法示例：{paths:,} → 结果 → 说明
+   说明列吃掉剩余宽度并左对齐，跟结果贴在一起（甩到最右会看不出说的是哪行） */
+.var-sep-item {
+  display: grid;
+  grid-template-columns: 96px 12px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 26px;
+  padding: 0 6px;
+  border: none;
+  border-radius: var(--shape-sm);
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur);
+}
+
+.var-sep-item:hover {
+  background: var(--state-hover);
+}
+
+.var-sep-item:hover code {
+  color: var(--primary-hover);
+}
+
+.var-sep-item code {
+  color: var(--primary);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.vs-arrow {
+  color: var(--outline);
+  font-size: 10.5px;
+}
+
+.vs-result {
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vs-note {
+  color: var(--on-surface-variant);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.var-sep-foot {
+  margin-top: 6px;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--on-surface-variant);
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+   图标选择行
+   -------------------------------------------------------------------------- */
+
+.icon-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.icon-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 138px;
+  max-width: 210px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--shape-sm);
+  background: var(--surface-container);
+}
+
+.icon-preview img {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  object-fit: contain;
+  display: none;
+}
+
+.icon-preview img.visible {
+  display: block;
+}
+
+.icon-preview span {
+  font-size: 10.5px;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   Toast
+   -------------------------------------------------------------------------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 48px;
+  transform: translate(-50%, 14px);
+  max-width: 80%;
+  padding: 10px 20px;
+  border-radius: var(--shape-sm);
+  background: var(--surface-container-highest);
+  color: var(--on-surface);
+  font-size: 12px;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 80;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.toast.error {
+  background: var(--error-container);
+  color: var(--on-error-container);
+}
