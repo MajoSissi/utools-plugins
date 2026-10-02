@@ -301,11 +301,46 @@ function unescapeSep(text) {
   });
 }
 
+/** 裸传会出事的字符：空白 + cmd 的元字符（引号内是安全的，裸传不行） */
+const SHELL_UNSAFE = /[\s"&^<>|()%!]/;
+
+/**
+ * 给路径加引号。**不能无脑包**，Windows 命令行解析在这里有个坑：
+ *
+ * CommandLineToArgvW 规则：引号内尾部的 n 个反斜杠紧跟闭合引号时会被当成
+ * 「转义引号」，必须写成 2n 个才能还原。所以：
+ *   `"D:\"`  →  程序收到 `D:\"`（闭合引号被吃掉）
+ * 这正是 `wt -d {qpath}` 在盘根报「无法访问启动目录"D:\"」的原因，
+ * 而 `D:\sub` 不以反斜杠结尾，所以子目录从来不出问题。
+ *
+ * 但「加倍反斜杠」只讨好**严格遵循该规则**的程序（wt、node、绝大多数原生程序）；
+ * 自己解析命令行的程序会把 `\\` 当成两个字面反斜杠（Everything 就是这类，
+ * 官方论坛那个「打不开盘符」的 bug 正是同一个根因，他们的修法是**去掉尾部引号**
+ * 让字符串不闭合）。带引号的写法没法同时满足两边。
+ *
+ * 所以取一个两边都能原样到达的形式：**尾斜杠且不含空白 / 元字符时直接裸传**。
+ * 实测（cmd.exe + node 打印 argv，见 DEVELOP.md 踩坑 20）：
+ *   "D:\"     -> D:\"     错
+ *   "D:\\"    -> D:\      对（仅对标准解析器的程序）
+ *   D:\       -> D:\      对（两种解析器都拿到 D:\，故为默认策略）
+ *   D:\sub    -> 仍需引号  -> "D:\sub"
+ */
+function quoteWin(p) {
+  const s = String(p == null ? "" : p);
+  if (!s) return '""';
+  const tail = (s.match(/\\+$/) || [""])[0].length;
+  if (!tail) return '"' + s + '"'; // 不以反斜杠结尾：正常加引号
+  // 以反斜杠结尾：只要没有空白 / 元字符就裸传，绕开整套转义分歧
+  if (!SHELL_UNSAFE.test(s)) return s;
+  // 实在需要引号（路径带空格等）：只能按标准规则加倍反斜杠
+  return '"' + s + "\\".repeat(tail) + '"';
+}
+
 /** 列表 -> 字符串。sep 省略时按空格拼（保持向后兼容）。 */
 function joinList(list, sep, quote) {
   const items = (list || []).filter(Boolean);
   if (!items.length) return "";
-  const parts = quote ? items.map((p) => `"${p}"`) : items;
+  const parts = quote ? items.map((p) => quoteWin(p)) : items;
   return parts.join(sep === null || sep === undefined ? " " : unescapeSep(sep));
 }
 
@@ -317,7 +352,7 @@ function substitute(template, ctx) {
       case "path":
         return ctx.path || "";
       case "qpath":
-        return ctx.path ? `"${ctx.path}"` : "";
+        return ctx.path ? quoteWin(ctx.path) : "";
       case "name":
         return ctx.name || "";
       case "parent":
@@ -1190,6 +1225,7 @@ window.folderCmdRaw = {
   buildContext,
   substitute,
   joinList,
+  quoteWin,
   buildPreview,
   normalizePreviewPaths,
   refreshCurrentFolder,

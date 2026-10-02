@@ -415,6 +415,42 @@ eq(
   eq(raw.substitute("{names:}", ctx), "one.txttwo.log", "变量：分隔符为空就是直接拼接");
 }
 
+/* -------- 12b. 引号内的尾斜杠转义（`wt -d "D:\"` 报「无法访问启动目录」） -------- */
+/* 盘根目录天然以反斜杠结尾，而 CommandLineToArgvW 里引号尾部的一个 `\`
+ * 会把闭合引号转义掉 —— 结果程序收到的是 `D:\"`。子目录通常不带尾斜杠，
+ * 所以只有盘根会暴露；但 `D:\sub\` 这种写法一样中招。 */
+{
+  // 盘根 / 尾斜杠：裸传，让「标准解析器」和「自己解析的程序」拿到同一个值
+  eq(raw.quoteWin("D:\\"), "D:\\", "quoteWin：盘根目录裸传（不加引号）");
+  eq(raw.quoteWin("D:\\a\\b\\\\"), "D:\\a\\b\\\\", "quoteWin：尾部两个反斜杠也裸传原样");
+  // 不带尾斜杠：照常加引号
+  eq(raw.quoteWin("D:\\sub"), '"D:\\sub"', "quoteWin：不以反斜杠结尾时正常加引号");
+  eq(raw.quoteWin("D:/"), '"D:/"', "quoteWin：正斜杠结尾不算尾斜杠");
+  eq(raw.quoteWin("D:"), '"D:"', "quoteWin：盘符不带斜杠时正常加引号");
+  eq(raw.quoteWin(""), '""', "quoteWin：空串也给一对引号");
+  // 带空格又带尾斜杠：躲不掉，退回标准转义
+  eq(
+    raw.quoteWin("D:\\My Folder\\"),
+    '"D:\\My Folder\\\\"',
+    "quoteWin：含空格时仍需引号，尾斜杠按标准规则加倍"
+  );
+  eq(raw.quoteWin("D:\\a&b\\"), '"D:\\a&b\\\\"', "quoteWin：含 cmd 元字符时同上");
+
+  const root = raw.buildContext(["D:\\"]);
+  eq(raw.substitute("{path}", root), "D:\\", "变量：{path} 本来就不带引号");
+  eq(raw.substitute("{qpath}", root), "D:\\", "变量：{qpath} 盘根目录裸传");
+
+  const two = raw.buildContext(["D:\\", "E:\\x\\"]);
+  eq(raw.substitute("{qpaths}", two), "D:\\ E:\\x\\", "变量：{qpaths} 每条各自决定加不加引号");
+  eq(raw.substitute("{qpaths:,}", two), "D:\\,E:\\x\\", "变量：{qpaths:,} 自定义分隔符时同理");
+
+  // 常规子目录不能被误伤（引号该加还得加）
+  const sub = raw.buildContext(["D:\\a\\b"]);
+  eq(raw.substitute("{qpath}", sub), '"D:\\a\\b"', "变量：{qpath} 子目录保持加引号");
+  const sp = raw.buildContext(["D:\\My Project"]);
+  eq(raw.substitute("{qpath}", sp), '"D:\\My Project"', "变量：{qpath} 含空格时加引号");
+}
+
 {
   // 只有一项 / 空列表
   const one = raw.buildContext(["D:\\a\\only.txt"]);
